@@ -35,7 +35,7 @@ class Client:
         self.school = school.strip()
         self.timeout = timeout
 
-        # Creating server and url form schoolname
+        # Creating server and url from schoolname
         self.server = f"{school}.webuntis.com"
         self.base_url = f"https://{self.server}/WebUntis/"
 
