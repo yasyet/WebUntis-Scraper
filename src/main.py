@@ -1,4 +1,4 @@
-from webuntis_api.Client import Client as UntisClient
+from webuntis_api.client import Client as UntisClient
 import config
 
 def main():
@@ -6,9 +6,9 @@ def main():
     PASSWORD = config.PASSWORD
     SCHOOL = config.SCHOOL
 
-    # Create client to communicate to WebUntis Servers
+    # Create client to login to WebUntis Servers
     client = UntisClient(username=USERNAME, password=PASSWORD, school=SCHOOL)
-    print(client.bearer_token)
+    client.login()
 
 if __name__ == "__main__":
     main()
