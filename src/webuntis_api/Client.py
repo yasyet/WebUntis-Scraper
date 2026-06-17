@@ -1,6 +1,6 @@
+from datetime import datetime
 import requests
 import re
-import sys
 
 
 class WebUntisError(Exception):
@@ -17,8 +17,10 @@ class WebUntisAuthenticationError(WebUntisError):
 
 class Client:
     ENDPOINTS = {
-        "j_spring_security_check": "j_spring_security_check",
-        "create_bearer_token": "api/token/new",
+        "login": "WebUntis",
+        "j_spring_security_check": "WebUntis/j_spring_security_check",
+        "bearer_token": "WebUntis/api/token/new",
+        "timetable": "WebUntis/api/rest/view/v1/timetable/entries",
     }
 
     DEFAULT_TIMEOUT = 15 # 15 Seconds
@@ -37,7 +39,7 @@ class Client:
 
         # Creating server and url from schoolname
         self.server = f"{school}.webuntis.com"
-        self.base_url = f"https://{self.server}/WebUntis/"
+        self.base_url = f"https://{self.server}/"
 
         # Logging
         self.last_error: str | None = None
@@ -55,7 +57,7 @@ class Client:
 
         return match.group(1)
     
-    def login(self) -> str:
+    def login(self) -> None:
         """
         Login function to establish connection to api.
         """
@@ -65,7 +67,8 @@ class Client:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
             "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
         })
-        response = self.session.get(self.base_url, timeout=self.timeout)
+        url = self.base_url + self.ENDPOINTS["login"]
+        response = self.session.get(url=url, timeout=self.timeout)
         response.raise_for_status()
 
         # Grab session-related _csrf token.
@@ -89,11 +92,35 @@ class Client:
             raise WebUntisAuthenticationError("Error connecting to WebUntis API. Please validate your credentials again (Username, Password, School)")
 
         # Grab bearer token
-        create_bearer_token_url = self.base_url + self.ENDPOINTS["create_bearer_token"]
+        create_bearer_token_url = self.base_url + self.ENDPOINTS["bearer_token"]
         create_bearer_token_response = self.session.get(url=create_bearer_token_url, timeout=self.timeout)
+        create_bearer_token_response.raise_for_status()
         
         # Check if Bearer Token or failed html response got fetched
         if create_bearer_token_response.text[0:1] == "ey":
             raise WebUntisAuthenticationError("Error while grabbing Bearer Token.")
         
         self.bearer_token = "Bearer " + create_bearer_token_response.text
+        self.session.headers.update({ "Authorization": self.bearer_token})
+
+    def get_timetable(self, start: datetime, end: datetime, format: int = 4, resource_types: str = "STUDENT", resources: int = 474, period_types: str = "", timetable_type: str = "MY_TIMETABLE", layout: str = "START_TIME") -> requests.Response:
+        """Function to access timetable (schedule) data."""
+        url = self.base_url + self.ENDPOINTS["timetable"]
+        response = self.session.get(
+            url=url,
+            params={
+                "start": start.strftime("%Y-%m-%d"),
+                "end": end.strftime("%Y-%m-%d"),
+                "format": format,
+                "resourceType": resource_types,
+                "resources": resources,
+                "periodTypes": period_types,
+                "timetableType": timetable_type,
+                "layout": layout,
+            },
+            timeout=self.timeout
+        )
+        response.raise_for_status()
+
+        if response.status_code == 200:
+            return response
