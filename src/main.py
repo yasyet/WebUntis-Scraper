@@ -1,9 +1,10 @@
-from webuntis_api.webuntis_api import Client
+from webuntis_api.webuntis_api import Client, Period
 from webuntis_api.util import parse_timetable_to_lesson
 from datetime import datetime
 from typing import Any
 import config
 import json
+
 
 def main():
     USERNAME = config.USERNAME
@@ -21,15 +22,12 @@ def main():
     timetable_json = timetable.json()
 
     # Parse timetable JSON into Period objects
-    periods: list[dict[str, Any]] = parse_timetable_to_lesson(timetable_json)
+    periods: list[Period] = parse_timetable_to_lesson(timetable_json)
 
     for period in periods:
-        print(str(period) + "\n")
+        if period.is_cancelled:
+            print(str(period))
 
-    # periods = parse_timetable_to_lesson(timetable_json)
-    with open("timetable.json", "w", encoding="utf-8") as file:
-        json.dump(timetable_json, file, indent=4)
 
 if __name__ == "__main__":
     main()
-
