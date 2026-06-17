@@ -124,3 +124,48 @@ class Client:
 
         if response.status_code == 200:
             return response
+        
+
+class PeriodRegistrationException(Exception):
+    """Exception if a period is not initialized correctly."""
+
+
+class Period:
+    def __init__(self, start: datetime, end: datetime, type: str, status: str, teacher: str, subject: str, room: str):
+        missing = [
+            name
+            for name, value in {
+                "start": start,
+                "end": end,
+                "type": type,
+                "status": status,
+                "teacher": teacher,
+                "subject": subject,
+                "room": room,
+            }.items()
+            if not value
+        ]
+
+        if missing:
+            raise PeriodRegistrationException(
+                f"Missing period credentials: {', '.join(missing)}"
+            )
+
+        self.start = start
+        self.end = end
+        self.type = type
+        self.status = status
+        self.teacher = teacher
+        self.subject = subject
+        self.room = room
+
+        # Parse json subject to subject name
+        self.subject_name = subject.title()
+
+    def __str__(self):
+        return f"{self.subject_name} mit {self.teacher} in {self.room}"
+    
+
+class IrregularPeriod(Period):
+    def __init__(self, start, end, type, status, teacher, subject, room):
+        super().__init__(start, end, type, status, teacher, subject, room)
