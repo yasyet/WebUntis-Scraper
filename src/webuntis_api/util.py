@@ -5,15 +5,15 @@ import json
 
 
 def parse_timetable_to_lesson(timetable: dict[str, Any]) -> list[Period]:
-    """Function parses a timetable json into a list of al periods."""
+    """Function parses a timetable json into a list of all periods."""
     if not timetable:
         raise TypeError("Function requires valid timetable")
 
     # Indexing "days" which contains all the days with their periods
     days: list[dict[str, Any]] = timetable["days"]
     if not days:
-        raise ValueError("Timetable does not contains \"days\"")
-    
+        raise ValueError('Timetable does not contains "days"')
+
     periods = []
     # Iterate over each day in given timetable
     for day in days:
@@ -25,7 +25,7 @@ def parse_timetable_to_lesson(timetable: dict[str, Any]) -> list[Period]:
             duration = entry["duration"]
             start = datetime.fromisoformat(duration["start"])
             end = datetime.fromisoformat(duration["end"])
-            
+
             # Index type and status of period
             type = entry["type"]
             status = entry["status"]
@@ -47,7 +47,7 @@ def parse_timetable_to_lesson(timetable: dict[str, Any]) -> list[Period]:
                 status=status,
                 teacher=teacher,
                 subject=subject,
-                room=room
+                room=room,
             )
             periods.append(period)
 
