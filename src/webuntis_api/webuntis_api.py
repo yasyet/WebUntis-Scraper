@@ -124,7 +124,7 @@ class Client:
         period_types: str = "",
         timetable_type: str = "MY_TIMETABLE",
         layout: str = "START_TIME",
-    ) -> requests.Response:
+    ):
         """Function to access timetable (schedule) data."""
         url = self.base_url + self.ENDPOINTS["timetable"]
         response = self.session.get(
@@ -144,7 +144,9 @@ class Client:
         response.raise_for_status()
 
         if response.status_code == 200:
-            return response
+            from webuntis_api.util import parse_timetable_to_lesson
+
+            return parse_timetable_to_lesson(response.json(), client=self)
 
 
 class PeriodRegistrationException(Exception):
@@ -161,6 +163,9 @@ class Period:
         teacher: str,
         subject: str,
         room: str,
+        layout_group: int | None = None,
+        substitution_text: str | None = None,
+        client: Client | None = None,
     ):
         missing = [
             name
@@ -188,12 +193,16 @@ class Period:
         self.teacher = teacher
         self.subject = subject
         self.room = room
+        self.layout_group = layout_group
+        self.substitution_text = substitution_text
+        self.client = client
 
         # Parse json subject to subject name
         self.subject_name = subject.title()
 
-        # Check to see if period is cancelled (Entfall)
-        self.is_cancelled = self.status == "CANCELLED"
+        self.cancelled = self.status == "CANCELLED"
+        self.substituted: bool | None = None
+        self.substitution_period: Period | None = None
 
     def __str__(self):
         return f"{self.subject_name} mit {self.teacher} in {self.room}"

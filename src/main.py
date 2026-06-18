@@ -1,12 +1,13 @@
 from webuntis_api.webuntis_api import Client, Period
-from webuntis_api.util import parse_timetable_to_lesson
 from datetime import datetime
-from typing import Any
 import config
-import json
+
+client: Client | None = None
 
 
 def main():
+    global client
+
     USERNAME = config.USERNAME
     PASSWORD = config.PASSWORD
     SCHOOL = config.SCHOOL
@@ -16,17 +17,18 @@ def main():
     client.login()
 
     # Create timetable with WebUntis API Client
-    start = datetime(2026, 6, 15)
-    end = datetime(2026, 6, 19)
-    timetable = client.get_timetable(start=start, end=end)
-    timetable_json = timetable.json()
-
-    # Parse timetable JSON into Period objects
-    periods: list[Period] = parse_timetable_to_lesson(timetable_json)
+    start = datetime(2026, 6, 16)
+    end = datetime(2026, 6, 16)
+    periods = client.get_timetable(start=start, end=end)
 
     for period in periods:
-        if period.is_cancelled:
-            print(str(period))
+        if not period.cancelled:
+            continue
+
+        if not period.substituted:
+            continue
+
+        print(period)
 
 
 if __name__ == "__main__":
