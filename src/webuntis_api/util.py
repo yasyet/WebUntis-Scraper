@@ -4,35 +4,44 @@ from typing import Any
 from webuntis_api.webuntis_api import Period
 
 
-def _resolve_cancelled_periods(periods: list[Period]):
-    return [period for period in periods if not period.cancelled]
-
-
-def _resolve_substitutions(_periods: list[Period]):
-    periods = _periods.copy()
-
-    additional_periods = [
-        period for period in periods if period.type == "ADDITIONAL_PERIOD"
-    ]
+def _link_substitutions(periods: list[Period]) -> None:
+    """
+    Second pass: for every CANCELLED period, look for a matching ADDITIONAL_PERIOD
+    (same start/end) and attach it. Mutates in place — nothing is removed or created.
+    """
+    additional_periods = [p for p in periods if p.type == "ADDITIONAL_PERIOD"]
 
     for period in periods:
         if not period.cancelled:
             continue
 
-        for additional_period in additional_periods:
-            if (
-                period.start == additional_period.start
-                and period.end == additional_period.end
-            ):
-                periods.remove(period)
+        substitute = next(
+            (
+                additional
+                for additional in additional_periods
+                if additional.start == period.start and additional.end == period.end
+            ),
+            None,
+        )
 
-    return periods
+        period.substitution_period = substitute
+        period.substituted = substitute is not None
+
+
+def get_taught_periods(periods: list[Period]) -> list[Period]:
+    """Normal lessons + substitute lessons — what's actually happening."""
+    return [period for period in periods if not period.cancelled]
+
+
+def get_cancellations(periods: list[Period]) -> list[Period]:
+    """Every CANCELLED period, substituted or not — this is what the notifier needs."""
+    return [period for period in periods if period.cancelled]
 
 
 def parse_timetable_to_lesson(
     timetable: dict[str, Any], client: Any | None = None
 ) -> list[Period]:
-    """Function parses a timetable json into a list of all periods."""
+    """Parses a timetable json into ALL periods (cancelled + taught), fully linked."""
     if not timetable:
         raise TypeError("Function requires valid timetable")
 
@@ -44,23 +53,28 @@ def parse_timetable_to_lesson(
 
     for day in days:
         entries = day.get("gridEntries", [])
+        day_periods: list[Period] = []
 
         for entry in entries:
             duration = entry["duration"]
             start = datetime.fromisoformat(duration["start"])
             end = datetime.fromisoformat(duration["end"])
 
-            period = Period(
-                id=entry["ids"][0],
-                start=start,
-                end=end,
-                type=entry["type"],
-                status=entry["status"],
-                teacher=entry["position1"][0]["current"]["longName"],
-                subject=entry["position2"][0]["current"]["longName"],
-                room=entry["position3"][0]["current"]["shortName"],
-                client=client,
+            day_periods.append(
+                Period(
+                    id=entry["ids"][0],
+                    start=start,
+                    end=end,
+                    type=entry["type"],
+                    status=entry["status"],
+                    teacher=entry["position1"][0]["current"]["longName"],
+                    subject=entry["position2"][0]["current"]["longName"],
+                    room=entry["position3"][0]["current"]["shortName"],
+                    client=client,
+                )
             )
-            periods.append(period)
 
-    return _resolve_cancelled_periods(_resolve_substitutions(periods))
+        _link_substitutions(day_periods)  # linking only makes sense within the same day
+        periods.extend(day_periods)
+
+    return periods
