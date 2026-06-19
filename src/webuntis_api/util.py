@@ -4,6 +4,10 @@ from typing import Any
 from webuntis_api.webuntis_api import Period
 
 
+def _resolve_cancelled_periods(periods: list[Period]):
+    return [period for period in periods if not period.cancelled]
+
+
 def _resolve_substitutions(_periods: list[Period]):
     periods = _periods.copy()
 
@@ -59,4 +63,4 @@ def parse_timetable_to_lesson(
             )
             periods.append(period)
 
-    return _resolve_substitutions(periods)
+    return _resolve_cancelled_periods(_resolve_substitutions(periods))
