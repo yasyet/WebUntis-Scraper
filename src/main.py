@@ -1,29 +1,29 @@
 from webuntis_api.webuntis_api import Client
-from webuntis_api.util import _resolve_substitutions
+from webuntis_api.util import get_taught_periods, get_cancellations
 from datetime import datetime
 import config
 
-client: Client | None = None
-
 
 def main():
-    global client
-
-    USERNAME = config.USERNAME
-    PASSWORD = config.PASSWORD
-    SCHOOL = config.SCHOOL
-
-    # Create client to login to WebUntis Servers
-    client = Client(username=USERNAME, password=PASSWORD, school=SCHOOL)
+    client = Client(
+        username=config.USERNAME, password=config.PASSWORD, school=config.SCHOOL
+    )
     client.login()
 
-    # Create timetable with WebUntis API Client
     start = datetime(2026, 6, 16)
     end = datetime(2026, 6, 16)
     periods = client.get_timetable(start=start, end=end)
 
-    for period in periods:
-        print(period)
+    print("Taught lessons:")
+    for period in get_taught_periods(periods):
+        print(f"  {period}")
+
+    print("\nCancellations:")
+    for period in get_cancellations(periods):
+        if period.substituted:
+            print(f"  {period} → substituted by {period.substitution_period}")
+        else:
+            print(f"  {period} (no substitution)")
 
 
 if __name__ == "__main__":
