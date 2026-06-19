@@ -156,6 +156,7 @@ class PeriodRegistrationException(Exception):
 class Period:
     def __init__(
         self,
+        id: str,
         start: datetime,
         end: datetime,
         type: str,
@@ -163,13 +164,12 @@ class Period:
         teacher: str,
         subject: str,
         room: str,
-        layout_group: int | None = None,
-        substitution_text: str | None = None,
         client: Client | None = None,
     ):
         missing = [
             name
             for name, value in {
+                "id": id,
                 "start": start,
                 "end": end,
                 "type": type,
@@ -186,6 +186,7 @@ class Period:
                 f"Missing period credentials: {', '.join(missing)}"
             )
 
+        self.id = id
         self.start = start
         self.end = end
         self.type = type
@@ -193,8 +194,6 @@ class Period:
         self.teacher = teacher
         self.subject = subject
         self.room = room
-        self.layout_group = layout_group
-        self.substitution_text = substitution_text
         self.client = client
 
         # Parse json subject to subject name

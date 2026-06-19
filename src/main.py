@@ -1,4 +1,4 @@
-from webuntis_api.webuntis_api import Client, Period
+from webuntis_api.webuntis_api import Client
 from datetime import datetime
 import config
 
@@ -22,12 +22,6 @@ def main():
     periods = client.get_timetable(start=start, end=end)
 
     for period in periods:
-        if not period.cancelled:
-            continue
-
-        if not period.substituted:
-            continue
-
         print(period)
 
 
