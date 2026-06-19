@@ -4,6 +4,27 @@ from typing import Any
 from webuntis_api.webuntis_api import Period
 
 
+def _resolve_substitutions(_periods: list[Period]):
+    periods = _periods.copy()
+
+    additional_periods = [
+        period for period in periods if period.type == "ADDITIONAL_PERIOD"
+    ]
+
+    for period in periods:
+        if not period.cancelled:
+            continue
+
+        for additional_period in additional_periods:
+            if (
+                period.start == additional_period.start
+                and period.end == additional_period.end
+            ):
+                periods.remove(period)
+
+    return periods
+
+
 def parse_timetable_to_lesson(
     timetable: dict[str, Any], client: Any | None = None
 ) -> list[Period]:
@@ -38,4 +59,4 @@ def parse_timetable_to_lesson(
             )
             periods.append(period)
 
-    return periods
+    return _resolve_substitutions(periods)

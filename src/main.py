@@ -1,4 +1,5 @@
 from webuntis_api.webuntis_api import Client
+from webuntis_api.util import _resolve_substitutions
 from datetime import datetime
 import config
 
