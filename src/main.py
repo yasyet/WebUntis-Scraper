@@ -16,14 +16,14 @@ def main():
 
     print("Taught lessons:")
     for period in get_taught_periods(periods):
-        print(f"  {period}")
+        print(f"    {period}")
 
     print("\nCancellations:")
     for period in get_cancellations(periods):
         if period.substituted:
-            print(f"  {period} → substituted by {period.substitution_period}")
+            print(f"    {period} → substituted by {period.substitution_period}")
         else:
-            print(f"  {period} (no substitution)")
+            print(f"    {period} (no substitution)")
 
 
 if __name__ == "__main__":
